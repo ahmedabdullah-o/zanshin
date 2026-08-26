@@ -1,0 +1,18 @@
+# macOS / Xcode
+.DS_Store
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+build/
+DerivedData/
+*.swp
+*.swo
+
+# opencode (local tool config — not part of the app)
+.opencode/
+
+# Node (transitively used by .opencode)
+/node_modules/

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  guard:
+    name: No leaked Apple Team ID
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify no DEVELOPMENT_TEAM is committed
+        run: sh scripts/check-no-team-id.sh
+
+  build:
+    name: Build (Xcode)
+    runs-on: macos-latest
+    needs: guard
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Zanshin
+        run: |
+          xcodebuild \
+            -project Zanshin.xcodeproj \
+            -scheme Zanshin \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build
