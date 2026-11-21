@@ -6,32 +6,49 @@ struct TimerView: View {
     @FocusState private var minutesFieldFocused: Bool
     @State private var sealStamped = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
             header
 
-            dial
-                .frame(width: 190, height: 190)
-                .scaleEffect(sealStamped ? 1 : 0.96)
+            VStack(spacing: 10) {
+                dial
+                    .frame(width: 166, height: 166)
+                controlsRow
+            }
+            .paperCard(opacity: 0.91)
 
-            maxim
-
-            sliderRow
-
-            presetsRow
-
-            inkRow
-
-            controlsRow
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Practice duration")
+                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .accessibilityAddTraits(.isHeader)
+                sliderRow
+                presetsRow
+                Divider().overlay(Theme.line)
+                inkRow
+            }
+            .paperCard()
 
             footerRow
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.paper.opacity(0.65), in: RoundedRectangle(cornerRadius: Theme.controlRadius))
         }
-        .padding(20)
-        .frame(width: 300)
-        .background(Theme.washi)
+        .padding(16)
+        .frame(width: 336)
+        .foregroundStyle(Theme.ink)
+        .tint(Theme.accent)
+        .background { ThemeArtwork() }
+        .onAppear { sealStamped = model.state == .done }
         .onChange(of: model.state) { oldValue, newValue in
             guard newValue == .done, oldValue != .done else {
                 if newValue != .done { sealStamped = false }
+                return
+            }
+            guard !reduceMotion else {
+                sealStamped = true
                 return
             }
             var instant = Transaction()
@@ -52,30 +69,39 @@ struct TimerView: View {
             Button {
                 NSApplication.shared.orderFrontStandardAboutPanel(nil)
             } label: {
-                HStack(spacing: 6) {
-                    Image(nsImage: ZanshinGlyph.katana(size: 12))
-                        .font(.system(size: 11))
-                        .foregroundColor(Theme.shu)
-                    Text("Zanshin")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(Theme.ink)
-                    Text("残心")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Theme.inkSoft)
+                HStack(spacing: 10) {
+                    Image(nsImage: ZanshinGlyph.katana(size: 20))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 38, height: 38)
+                        .background(Theme.accent.opacity(0.13), in: RoundedRectangle(cornerRadius: Theme.controlRadius))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Zanshin")
+                            .font(.system(size: 23, weight: .medium, design: .serif))
+                            .textCase(.lowercase)
+                            .foregroundStyle(Theme.ink)
+                        Text("残心")
+                            .font(.system(size: 10))
+                            .tracking(2)
+                            .foregroundStyle(Theme.inkSoft)
+                    }
                 }
             }
             .buttonStyle(ZanshinButtonStyle())
             .accessibilityLabel("About Zanshin")
             Spacer()
-            Text(stance)
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1)
-                .textCase(.uppercase)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 4)
-                .background(stanceBackground)
-                .foregroundColor(stanceForeground)
-                .clipShape(Capsule())
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(stanceColor)
+                    .frame(width: 6, height: 6)
+                    .accessibilityHidden(true)
+                Text(stance)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(Theme.ink)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Theme.paper.opacity(0.88), in: Capsule())
         }
     }
 
@@ -88,21 +114,11 @@ struct TimerView: View {
         }
     }
 
-    private var stanceBackground: Color {
+    private var stanceColor: Color {
         switch model.state {
-        case .running where model.kind == .focus: return Theme.sumi
-        case .running: return Theme.matcha
+        case .running: return model.kind == .rest ? Theme.matcha : Theme.accent
         case .done: return Theme.shu
-        default: return .clear
-        }
-    }
-
-    private var stanceForeground: Color {
-        switch model.state {
-        case .running where model.kind == .focus: return Theme.onSumi
-        case .running: return Theme.onShu
-        case .done: return Theme.onShu
-        default: return Theme.inkSoft
+        case .idle, .paused: return Theme.inkSoft
         }
     }
 
@@ -115,13 +131,13 @@ struct TimerView: View {
     private var dial: some View {
         ZStack {
             Circle()
-                .stroke(Theme.line, lineWidth: 9)
+                .stroke(Theme.line, lineWidth: 6)
 
             Circle()
                 .trim(from: 0, to: model.progress)
-                .stroke(ringColor, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                .stroke(ringColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 0.25), value: model.progress)
+                .animation(reduceMotion ? nil : .linear(duration: 0.25), value: model.progress)
 
             dialCenter
         }
@@ -139,7 +155,10 @@ struct TimerView: View {
                     .foregroundColor(Theme.inkSoft)
             } else {
                 Text(model.formattedTime)
-                    .font(.system(size: 34, weight: .bold, design: .monospaced))
+                    .font(.system(size: 34, weight: .medium, design: .serif))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                    .padding(.horizontal, 12)
                     .foregroundColor(Theme.ink)
                     .monospacedDigit()
                 Text(dialCaption)
@@ -178,33 +197,6 @@ struct TimerView: View {
         }
     }
 
-    /// A rotating maxim for the current state.
-    private var maxim: some View {
-        Text(maximText)
-            .font(.system(size: 11, weight: .medium))
-            .italic()
-            .foregroundColor(Theme.inkSoft)
-            .multilineTextAlignment(.center)
-            .frame(minHeight: 14)
-    }
-
-    private var maximText: String {
-        switch model.state {
-        case .idle:
-            return "Set your practice — the blade waits."
-        case .running where model.kind == .focus:
-            return "Zanshin — the mind stays with the blade."
-        case .running:
-            return "Tea time. The sword rests."
-        case .paused:
-            return "Held breath. Return when ready."
-        case .done where model.suggestedNext == .rest:
-            return "A strike well made deserves tea."
-        case .done:
-            return "The ensō closes. Begin again."
-        }
-    }
-
     // MARK: Slider + number entry
 
     private var sliderRow: some View {
@@ -215,7 +207,7 @@ struct TimerView: View {
             ), in: model.allowedRange, step: 1)
             .disabled(isDurationLocked)
             .opacity(isDurationLocked ? 0.45 : 1)
-            .tint(Theme.sumi)
+            .tint(Theme.accent)
             .accessibilityLabel("Practice duration")
 
             minutesField
@@ -224,10 +216,11 @@ struct TimerView: View {
 
     private var minutesField: some View {
         HStack(spacing: 4) {
-            TextField("", value: Binding(
+            TextField("Practice duration", value: Binding(
                 get: { model.minutes },
                 set: { model.setMinutes($0) }
             ), format: .number.grouping(.never))
+            .textFieldStyle(.plain)
             .multilineTextAlignment(.trailing)
             .labelsHidden()
             .focused($minutesFieldFocused)
@@ -239,9 +232,12 @@ struct TimerView: View {
         .font(.system(size: 13, weight: .bold, design: .monospaced))
         .frame(width: 58)
         .padding(.vertical, 6)
-        .background(Theme.paper)
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.line, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(Theme.washi, in: RoundedRectangle(cornerRadius: Theme.controlRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.controlRadius)
+                .strokeBorder(minutesFieldFocused ? Theme.accent : Theme.line)
+                .allowsHitTesting(false)
+        }
         .disabled(isDurationLocked)
     }
 
@@ -261,11 +257,12 @@ struct TimerView: View {
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(isActivePreset(value) ? Theme.sumi : Theme.washi)
-                        .foregroundColor(isActivePreset(value) ? Theme.onSumi : Theme.ink)
+                        .background(isActivePreset(value) ? Theme.accent.opacity(0.13) : Theme.paper)
+                        .foregroundColor(isActivePreset(value) ? Theme.accent : Theme.ink)
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
-                                .stroke(isActivePreset(value) ? Theme.sumi : Theme.line, lineWidth: 1)
+                                .strokeBorder(isActivePreset(value) ? Theme.accent.opacity(0.45) : Theme.line)
+                                .allowsHitTesting(false)
                         )
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
@@ -274,6 +271,7 @@ struct TimerView: View {
                 .opacity(model.isActivePresetLocked ? 0.45 : 1)
                 .keyboardShortcutIfEnabled(shortcutsEnabled ? KeyEquivalent(Character("\(index + 1)")) : nil)
                 .accessibilityLabel("\(value) minute practice")
+                .accessibilityAddTraits(isActivePreset(value) ? .isSelected : [])
             }
         }
     }
@@ -298,7 +296,7 @@ struct TimerView: View {
                 } label: {
                     Circle()
                         .fill(option.swatch)
-                        .frame(width: 16, height: 16)
+                        .frame(width: 13, height: 13)
                         .overlay(
                             Circle().stroke(
                                 model.inkTheme == option ? Theme.ink : Theme.line,
@@ -306,10 +304,13 @@ struct TimerView: View {
                             )
                             .padding(-3)
                         )
+                        .frame(width: 23, height: 23)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(ZanshinButtonStyle())
                 .disabled(model.isActivePresetLocked)
                 .accessibilityLabel("\(option.name) ink")
+                .accessibilityAddTraits(model.inkTheme == option ? .isSelected : [])
             }
 
             Spacer()
@@ -343,9 +344,8 @@ struct TimerView: View {
                 Image(systemName: primarySymbol)
                     .font(.system(size: 20))
                     .foregroundColor(primaryForeground)
-                    .frame(width: 62, height: 62)
-                    .background(primaryBackground)
-                    .clipShape(Circle())
+                    .frame(width: 62, height: 40)
+                    .background(primaryBackground, in: RoundedRectangle(cornerRadius: Theme.controlRadius))
             }
             .buttonStyle(ZanshinButtonStyle())
             .keyboardShortcutIfEnabled(shortcutsEnabled ? .space : nil)
@@ -375,18 +375,18 @@ struct TimerView: View {
 
     private var primaryBackground: Color {
         switch model.state {
-        case .running: return model.kind == .rest ? Theme.matcha : Theme.sumi
-        case .paused: return model.kind == .rest ? Theme.matcha : Theme.sumi
+        case .running: return model.kind == .rest ? Theme.matcha : Theme.accent
+        case .paused: return model.kind == .rest ? Theme.matcha : Theme.accent
         case .done: return model.suggestedNext == .rest ? Theme.matcha : Theme.shu
-        case .idle: return Theme.sumi
+        case .idle: return Theme.accent
         }
     }
 
     private var primaryForeground: Color {
         switch model.state {
-        case .running, .paused: return model.kind == .rest ? Theme.onShu : Theme.onSumi
-        case .done: return Theme.onShu
-        case .idle: return Theme.onSumi
+        case .running, .paused: return model.kind == .rest ? Theme.onMatcha : Theme.onAccent
+        case .done: return model.suggestedNext == .rest ? Theme.onMatcha : Theme.onShu
+        case .idle: return Theme.onAccent
         }
     }
 
@@ -407,10 +407,13 @@ struct TimerView: View {
             Image(systemName: systemName)
                 .font(.system(size: 14))
                 .foregroundColor(Theme.inkSoft)
-                .frame(width: 42, height: 42)
-                .background(Theme.paper)
-                .overlay(Circle().stroke(Theme.line, lineWidth: 1))
-                .clipShape(Circle())
+                .frame(width: 38, height: 38)
+                .background(Theme.paper, in: RoundedRectangle(cornerRadius: Theme.controlRadius))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.controlRadius)
+                        .strokeBorder(Theme.line)
+                        .allowsHitTesting(false)
+                }
         }
         .buttonStyle(ZanshinButtonStyle())
         .accessibilityLabel(label)
@@ -419,9 +422,10 @@ struct TimerView: View {
     // MARK: Footer
 
     private var footerRow: some View {
-        HStack(spacing: 10) {
+        let isDark = model.prefersDarkAppearance ?? (colorScheme == .dark)
+        return HStack(spacing: 10) {
             miniToggle(
-                systemName: "picture.in.picture",
+                systemName: "pip",
                 label: "Floating display",
                 isActive: model.isFloatingDisplayOn
             ) {
@@ -430,10 +434,10 @@ struct TimerView: View {
 
             miniToggle(
                 systemName: "circle.lefthalf.filled",
-                label: "Higher-contrast menu bar icon",
-                isActive: model.isHighContrastIcon
+                label: isDark ? "Switch to light appearance" : "Switch to dark appearance",
+                isActive: isDark
             ) {
-                model.isHighContrastIcon.toggle()
+                model.prefersDarkAppearance = !isDark
             }
 
             miniToggle(
@@ -515,28 +519,31 @@ struct TimerView: View {
         }
     }
 
-    private func miniToggle(systemName: String, label: String, isActive: Bool, action: @escaping () -> Void) -> some View {
+    private func miniToggle(systemName: String, label: LocalizedStringKey, isActive: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 11))
-                .foregroundColor(isActive ? Theme.onSumi : Theme.inkSoft)
+                .foregroundColor(isActive ? Theme.accent : Theme.inkSoft)
                 .frame(width: 26, height: 26)
-                .background(isActive ? Theme.sumi : Theme.paper)
-                .overlay(Circle().stroke(isActive ? Theme.sumi : Theme.line, lineWidth: 1))
+                .background(isActive ? Theme.accent.opacity(0.13) : Theme.paper)
+                .overlay(Circle().strokeBorder(isActive ? Theme.accent.opacity(0.45) : Theme.line))
                 .clipShape(Circle())
         }
         .buttonStyle(ZanshinButtonStyle())
         .accessibilityLabel(label)
+        .help(Text(label))
     }
 }
 
 /// Gentle press feedback shared by every custom button.
 struct ZanshinButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.94 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.97 : 1)
             .opacity(configuration.isPressed ? 0.85 : 1)
-            .animation(.spring(response: 0.28, dampingFraction: 0.7), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.14), value: configuration.isPressed)
     }
 }
 

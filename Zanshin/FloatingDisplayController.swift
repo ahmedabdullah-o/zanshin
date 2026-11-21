@@ -22,6 +22,7 @@ final class FloatingDisplayController: NSObject, NSWindowDelegate {
         )
         super.init()
 
+        panel.appearance = Theme.appearance(prefersDark: model.prefersDarkAppearance)
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
@@ -84,6 +85,7 @@ private final class DraggableHostingView<Content: View>: NSHostingView<Content> 
 
 struct FloatingDisplayView: View {
     @ObservedObject var model: TimerModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
@@ -94,7 +96,7 @@ struct FloatingDisplayView: View {
                 .trim(from: 0, to: model.progress)
                 .stroke(ringColor, style: StrokeStyle(lineWidth: 5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 0.25), value: model.progress)
+                .animation(reduceMotion ? nil : .linear(duration: 0.25), value: model.progress)
 
             center
         }
@@ -102,7 +104,7 @@ struct FloatingDisplayView: View {
         .frame(width: 78, height: 78)
         .background(
             Circle()
-                .fill(Theme.washi.opacity(0.97))
+                .fill(Theme.paper.opacity(0.97))
                 .overlay(Circle().stroke(Theme.line, lineWidth: 1))
                 .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
         )
@@ -121,7 +123,9 @@ struct FloatingDisplayView: View {
                     .foregroundColor(Theme.shu)
             } else {
                 Text(model.formattedTime)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    .font(.system(size: 15, weight: .medium, design: .serif))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
                     .foregroundColor(Theme.ink)
                     .monospacedDigit()
                 Text(subtitle)

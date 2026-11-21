@@ -1,6 +1,6 @@
 # Zanshin
 
-A quiet, menu-bar Pomodoro timer for macOS. Washi-paper palette, sumi-ink ensō, shu-laccer break reminders.
+A quiet menu bar Pomodoro timer for macOS with a washi-paper palette, sumi-ink ensō, and vermilion break reminders.
 
 ## Features
 
@@ -8,13 +8,13 @@ A quiet, menu-bar Pomodoro timer for macOS. Washi-paper palette, sumi-ink ensō,
 - Focus sessions and short breaks, with a snooze action from the notification
 - Native `UNUserNotificationCenter` integration (with action buttons)
 - System-sound alarm (choose from `Glass`, `Submarine`, `Ping`, `Purr`, `Funk`, `Blow`, `Bottle`, `Tink`)
-- Light and dark mode, hand-tuned palette in `Theme.swift`
+- The appearance switch applies the Washi light or Sumi dark palette to the timer and floating display. Menu bar icon contrast is available in the right-click menu.
 - App Sandbox enabled, no network access
 
 ## Requirements
 
 - macOS 26.5.2 or later
-- Xcode 26.3 or later (Swift 5.0 toolchain)
+- Xcode 27, with the project set to Swift 5 language mode
 
 ## Build
 
@@ -23,6 +23,9 @@ xcodebuild \
   -project Zanshin.xcodeproj \
   -scheme Zanshin \
   -configuration Release \
+  CODE_SIGN_STYLE=Manual \
+  CODE_SIGN_IDENTITY=- \
+  DEVELOPMENT_TEAM="" \
   build
 ```
 
@@ -30,7 +33,7 @@ Or open `Zanshin.xcodeproj` in Xcode and ⌘R.
 
 ## Running on your own Apple Developer account
 
-The repo is published with `DEVELOPMENT_TEAM = ""` so no personal team ID leaks. To run on your machine:
+The command above builds an ad hoc–signed app for local use. For builds signed with your own Apple Developer account:
 
 1. Open `Zanshin.xcodeproj` in Xcode.
 2. Select the `Zanshin` target → **Signing & Capabilities** → set your own Team.
@@ -46,14 +49,14 @@ Zanshin/
 ├── Zanshin/
 │   ├── Zanshin.swift              # @main, AppDelegate, notification actions
 │   ├── TimerModel.swift           # State, focus/break cycle, persistence
-│   ├── TimerView.swift            # SwiftUI floating panel
+│   ├── TimerView.swift            # SwiftUI menu bar popover
 │   ├── FloatingDisplayController.swift  # NSPanel host
 │   ├── StatusBarController.swift  # NSStatusItem + menus
 │   ├── SoundPlayer.swift          # System-sound alarm
 │   ├── Theme.swift                # Palette + BladeTheme
 │   ├── ZanshinGlyphs.swift        # SF Symbols + custom ensō drawing
 │   ├── Info.plist                 # Empty; values come from INFOPLIST_KEY_*
-│   └── Assets.xcassets/           # AppIcon
+│   └── Assets.xcassets/           # App icon and theme artwork
 ├── Zanshin.xcodeproj/
 ├── scripts/
 │   └── check-no-team-id.sh        # CI guard
@@ -105,6 +108,13 @@ Zanshin/
 - `PRODUCT_BUNDLE_IDENTIFIER` is a placeholder (`com.githubusername.zanshin`); rename for your fork
 - The project uses file-system synchronized groups (object version 90); new files under `Zanshin/` are picked up automatically — do not add them manually to `project.pbxproj`
 
+## Theme artwork
+
+Zanshin shares its Washi and Sumi palettes and woodblock prints with Komorebi. Both prints are public-domain reproductions from The Metropolitan Museum of Art.
+
+- Washi uses Utagawa Hiroshige’s [Evening Snow on Mount Hira](https://www.metmuseum.org/art/collection/search/56897).
+- Sumi uses Utagawa Hiroshige’s [Night Rain at Karasaki](https://www.metmuseum.org/art/collection/search/36531).
+
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Zanshin’s original work is available under the [MIT License](LICENSE). The woodblock prints are public domain.

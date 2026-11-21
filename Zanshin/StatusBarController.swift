@@ -55,6 +55,13 @@ final class StatusBarController: NSObject {
             .sink { [weak self] _ in self?.syncFloatingDisplay() }
             .store(in: &cancellables)
 
+        model.$prefersDarkAppearance
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] prefersDark in self?.applyAppearance(prefersDark: prefersDark) }
+            .store(in: &cancellables)
+
+        applyAppearance(prefersDark: model.prefersDarkAppearance)
         installEventMonitors()
         installGlobalHotKey()
         syncFloatingDisplay()
@@ -136,6 +143,10 @@ final class StatusBarController: NSObject {
         )
         menu.addItem(floatItem)
 
+        let contrastItem = item("Higher-contrast menu bar icon", #selector(quickToggleIconContrast))
+        contrastItem.state = model.isHighContrastIcon ? .on : .off
+        menu.addItem(contrastItem)
+
         menu.addItem(.separator())
         menu.addItem(item("Quit Zanshin", #selector(quickQuit)))
 
@@ -160,6 +171,10 @@ final class StatusBarController: NSObject {
 
     @objc private func quickToggleFloating() {
         model.isFloatingDisplayOn.toggle()
+    }
+
+    @objc private func quickToggleIconContrast() {
+        model.isHighContrastIcon.toggle()
     }
 
     @objc private func quickQuit() {
@@ -226,6 +241,12 @@ final class StatusBarController: NSObject {
             0,
             &hotKeyRef
         )
+    }
+
+    private func applyAppearance(prefersDark: Bool?) {
+        let appearance = Theme.appearance(prefersDark: prefersDark)
+        popover.appearance = appearance
+        floatingDisplay?.panel.appearance = appearance
     }
 
     // MARK: Floating Display

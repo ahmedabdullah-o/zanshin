@@ -53,6 +53,9 @@ final class TimerModel: ObservableObject {
     @Published var isHighContrastIcon: Bool {
         didSet { defaults.set(isHighContrastIcon, forKey: Self.contrastKey) }
     }
+    @Published var prefersDarkAppearance: Bool? {
+        didSet { defaults.set(prefersDarkAppearance, forKey: Self.appearanceKey) }
+    }
     @Published var isFloatingDisplayOn: Bool {
         didSet { defaults.set(isFloatingDisplayOn, forKey: Self.floatKey) }
     }
@@ -84,6 +87,7 @@ final class TimerModel: ObservableObject {
     private static let breakKey = "breakMinutes"
     private static let mutedKey = "isMuted"
     private static let contrastKey = "highContrastIcon"
+    private static let appearanceKey = "prefersDarkAppearance"
     private static let floatKey = "floatingDisplayOn"
     private static let loginKey = "launchAtLogin"
     private static let inkThemeKey = "inkTheme"
@@ -118,6 +122,7 @@ final class TimerModel: ObservableObject {
         breakMinutes = resolvedBreak
         isMuted = defaults.bool(forKey: Self.mutedKey)
         isHighContrastIcon = defaults.bool(forKey: Self.contrastKey)
+        prefersDarkAppearance = defaults.object(forKey: Self.appearanceKey) as? Bool
         isFloatingDisplayOn = defaults.bool(forKey: Self.floatKey)
         launchAtLogin = defaults.bool(forKey: Self.loginKey)
         inkTheme = BladeTheme(rawValue: defaults.string(forKey: Self.inkThemeKey) ?? "") ?? .sumi

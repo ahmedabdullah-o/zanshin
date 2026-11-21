@@ -1,23 +1,28 @@
 import SwiftUI
 
-/// Zanshin palette — washi paper, sumi ink, shu lacquer, kin gold, matcha tea.
-/// Dark mode inverts the ink roles so the ensō keeps its contrast.
+/// Washi and Sumi use the same canvas, surface, ink, and accent colors as Komorebi.
 enum Theme {
-    static let washi  = dynamic(0xF6F1E5, dark: 0x201C17)   // canvas
-    static let paper  = dynamic(0xEEE7D7, dark: 0x2A251F)   // raised surface
-    static let line   = dynamic(0xDDD3BE, dark: 0x3B352C)   // hairlines
-    static let ink    = dynamic(0x26221C, dark: 0xEAE2D0)   // primary text
-    static let inkSoft = dynamic(0x8A8172, dark: 0x9A9080)  // secondary text
+    static let washi = dynamic(0xF5F0E6, dark: 0x242624)
+    static let paper = dynamic(0xFFFCF6, dark: 0x30322E)
+    static let line = dynamic(0xDDD7C9, dark: 0x505149)
+    static let ink = dynamic(0x302F29, dark: 0xEEE7DA)
+    static let inkSoft = dynamic(0x706E63, dark: 0xB9B2A4)
+    static let accent = dynamic(0x58664B, dark: 0xD2AF73)
+    static let onAccent = dynamic(0xFFFCF6, dark: 0x242624)
 
-    /// Primary accent surface (buttons, pills, the ink ring).
-    static let sumi = dynamic(0x26221C, dark: 0xEDE5D3)
-    /// Text/icons that sit on top of `sumi`.
-    static let onSumi = dynamic(0xF6F1E5, dark: 0x201C17)
+    static let sumi = ink
+    static let shu = dynamic(0x9E3E35, dark: 0xF09588)
+    static let onShu = dynamic(0xFFFAFA, dark: 0x242624)
+    static let kin = dynamic(0x886524, dark: 0xD2AF73)
+    static let matcha = dynamic(0x58664B, dark: 0xA6BA8D)
+    static let onMatcha = dynamic(0xFFFCF6, dark: 0x242624)
 
-    static let shu    = dynamic(0xB03A2E, dark: 0xCE5347)   // crimson lacquer
-    static let onShu  = dynamic(0xFBF5EA, dark: 0xFBF0E4)
-    static let kin    = dynamic(0xC29B3C, dark: 0xD3AF52)   // gold leaf
-    static let matcha = dynamic(0x77835A, dark: 0x93A06F)   // tea green
+    static let cardRadius: CGFloat = 15
+    static let controlRadius: CGFloat = 9
+
+    static func appearance(prefersDark: Bool?) -> NSAppearance? {
+        prefersDark.flatMap { NSAppearance(named: $0 ? .darkAqua : .aqua) }
+    }
 
     static func dynamic(_ light: UInt32, dark: UInt32) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
@@ -62,5 +67,38 @@ enum BladeTheme: String, CaseIterable, Identifiable {
     /// The color of the ensō stroke while a focus session runs.
     var ringColor: Color {
         swatch
+    }
+}
+
+/// Public-domain woodblock prints also used by Komorebi's Washi and Sumi themes.
+struct ThemeArtwork: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.colorSchemeContrast) private var contrast
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Theme.washi
+                Image(colorScheme == .dark ? "SumiArtwork" : "WashiArtwork")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .scaleEffect(1.16)
+                Theme.washi.opacity(contrast == .increased ? 0.88 : 0.60)
+            }
+            .clipped()
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    func paperCard(opacity: Double = 0.96) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.cardRadius)
+        return padding(14)
+            .frame(maxWidth: .infinity)
+            .background(Theme.paper.opacity(opacity), in: shape)
+            .overlay { shape.strokeBorder(Theme.line).allowsHitTesting(false) }
     }
 }
